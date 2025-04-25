@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>DropAnd - 디렉토리 관리</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .directory-tree {
+            margin-top: 20px;
+        }
+        .directory-item {
+            padding: 5px;
+            margin: 2px 0;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            border-radius: 3px;
+            user-select: none;
+        }
+        .directory-item:hover {
+            background-color: #f0f0f0;
+        }
+        .directory-item.selected {
+            background-color: #e3f2fd;
+        }
+        .directory-item.dragging {
+            opacity: 0.5;
+            background-color: #e3f2fd;
+        }
+        .directory-item.drag-over {
+            border: 2px dashed #4caf50;
+        }
+        .directory-content {
+            margin-left: 20px;
+            padding-left: 15px;
+            border-left: 1px dashed #ccc;
+        }
+        .directory-name {
+            margin-left: 5px;
+            flex-grow: 1;
+        }
+        .directory-actions {
+            display: flex;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        .btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-add {
+            background-color: #4caf50;
+            color: white;
+        }
+        .btn-delete {
+            background-color: #f44336;
+            color: white;
+        }
+        .btn-toggle {
+            background: none;
+            border: none;
+            padding: 0 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .top-actions {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .icon-folder {
+            color: #ffd700;
+            margin-right: 5px;
+        }
+        .icon-action {
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 3px;
+        }
+        .icon-action:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+        .icon-expand {
+            color: #666;
+            width: 16px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!--
+    메인 페이지
+     
+    주요 기능:
+    1. 애플리케이션 메인 화면 제공
+    2. 네비게이션 메뉴 표시
+    3. 사용자 세션 상태 표시
+    4. 주요 기능으로의 링크 제공
+    -->
+
+    <div class="container">
+        <div class="top-actions">
+            <button class="btn btn-add" onclick="addRootDirectory()">
+                <i class="fas fa-plus"></i> 최상위 디렉토리 추가
+            </button>
+        </div>
+        <div id="directory-tree" class="directory-tree"></div>
+    </div>
+
+    <script>
+        let directories = [];
+        let draggedItem = null;
+        
+        function renderDirectoryTree() {
+            const container = document.getElementById('directory-tree');
+            container.innerHTML = '';
+            
+            const rootDirectories = directories.filter(d => !d.parentId);
+            rootDirectories.sort((a, b) => a.sortOrder - b.sortOrder);
+            rootDirectories.forEach(dir => {
+                container.appendChild(createDirectoryElement(dir));
+            });
+        }
+        
+        function createDirectoryElement(directory) {
+            const div = document.createElement('div');
+            div.className = 'directory-item';
+            div.setAttribute('data-id', directory.id);
+            div.draggable = true;
+            
+            div.addEventListener('dragstart', handleDragStart);
+            div.addEventListener('dragend', handleDragEnd);
+            div.addEventListener('dragover', handleDragOver);
+            div.addEventListener('drop', handleDrop);
+            
+            const expandBtn = document.createElement('button');
+            expandBtn.className = 'btn-toggle';
+            expandBtn.innerHTML = '<i class="fas fa-plus icon-expand"></i>';
+            expandBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleDirectory(directory.id, expandBtn);
+            };
+            
+            const folderIcon = document.createElement('i');
+            folderIcon.className = 'fas fa-folder icon-folder';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'directory-name';
+            nameSpan.textContent = directory.name;
+            
+            const actions = document.createElement('div');
+            actions.className = 'directory-actions';
+            
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn btn-add';
+            addBtn.innerHTML = '<i class="fas fa-plus"></i>';
+            addBtn.onclick = (e) => {
+                e.stopPropagation();
+                addSubDirectory(directory.id);
+            };
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-delete';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteDirectory(directory.id);
+            };
+            
+            actions.appendChild(addBtn);
+            actions.appendChild(deleteBtn);
+            
+            div.appendChild(expandBtn);
+            div.appendChild(folderIcon);
+            div.appendChild(nameSpan);
+            div.appendChild(actions);
+            
+            const content = document.createElement('div');
+            content.className = 'directory-content';
+            content.style.display = 'none';
+            content.setAttribute('data-parent', directory.id);
+            
+            const wrapper = document.createElement('div');
+            wrapper.appendChild(div);
+            wrapper.appendChild(content);
+            
+            return wrapper;
+        }
+        
+        function handleDragStart(e) {
+            draggedItem = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', e.target.getAttribute('data-id'));
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.directory-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const target = e.target.closest('.directory-item');
+            if (target && target !== draggedItem) {
+                target.classList.add('drag-over');
+            }
+        }
+        
+        async function handleDrop(e) {
+            e.preventDefault();
+            const target = e.target.closest('.directory-item');
+            target.classList.remove('drag-over');
+            
+            if (target === draggedItem) return;
+            
+            const draggedId = parseInt(draggedItem.getAttribute('data-id'));
+            const targetId = parseInt(target.getAttribute('data-id'));
+            
+            try {
+                const response = await fetch(`/api/directories/${draggedId}/move`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        parentId: targetId
+                    })
+                });
+                
+                if (response.ok) {
+                    await loadDirectories();
+                    const content = document.querySelector(`[data-parent="${targetId}"]`);
+                    if (content) {
+                        content.style.display = 'block';
+                        const toggleBtn = target.querySelector('.btn-toggle i');
+                        toggleBtn.className = 'fas fa-minus icon-expand';
+                        await loadSubDirectories(targetId, content);
+                    }
+                }
+            } catch (error) {
+                console.error('디렉토리 이동 실패:', error);
+            }
+        }
+        
+        async function toggleDirectory(id, button) {
+            const content = document.querySelector(`[data-parent="${id}"]`);
+            const icon = button.querySelector('i');
+            
+            if (content.style.display === 'none') {
+                await loadSubDirectories(id, content);
+                content.style.display = 'block';
+                icon.className = 'fas fa-minus icon-expand';
+            } else {
+                content.style.display = 'none';
+                icon.className = 'fas fa-plus icon-expand';
+            }
+        }
+        
+        async function loadSubDirectories(parentId, container) {
+            try {
+                const response = await fetch(`/api/directories/${parentId}/children`);
+                const children = await response.json();
+                
+                container.innerHTML = '';
+                children.sort((a, b) => a.sortOrder - b.sortOrder);
+                children.forEach(child => {
+                    container.appendChild(createDirectoryElement(child));
+                });
+            } catch (error) {
+                console.error('하위 디렉토리 로드 실패:', error);
+            }
+        }
+        
+        async function addRootDirectory() {
+            const name = prompt('새 디렉토리 이름을 입력하세요:');
+            if (!name) return;
+            
+            try {
+                const response = await fetch('/api/directories', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        parentId: null
+                    })
+                });
+                
+                if (response.ok) {
+                    loadDirectories();
+                }
+            } catch (error) {
+                console.error('디렉토리 생성 실패:', error);
+            }
+        }
+        
+        async function addSubDirectory(parentId) {
+            const name = prompt('새 디렉토리 이름을 입력하세요:');
+            if (!name) return;
+            
+            try {
+                const response = await fetch('/api/directories', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        parentId: parentId
+                    })
+                });
+                
+                if (response.ok) {
+                    const content = document.querySelector(`[data-parent="${parentId}"]`);
+                    if (content) {
+                        const parentItem = document.querySelector(`[data-id="${parentId}"]`);
+                        const toggleBtn = parentItem.querySelector('.btn-toggle i');
+                        content.style.display = 'block';
+                        toggleBtn.className = 'fas fa-minus icon-expand';
+                        await loadSubDirectories(parentId, content);
+                    }
+                }
+            } catch (error) {
+                console.error('디렉토리 생성 실패:', error);
+            }
+        }
+        
+        async function deleteDirectory(id) {
+            if (!confirm('이 디렉토리를 삭제하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch(`/api/directories/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadDirectories();
+                }
+            } catch (error) {
+                console.error('디렉토리 삭제 실패:', error);
+            }
+        }
+        
+        async function loadDirectories() {
+            try {
+                const response = await fetch('/api/directories/tree');
+                directories = await response.json();
+                renderDirectoryTree();
+            } catch (error) {
+                console.error('디렉토리 로드 실패:', error);
+            }
+        }
+        
+        // 초기 로드
+        loadDirectories();
+    </script>
+</body>
+</html> 

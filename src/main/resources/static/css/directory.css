@@ -1,0 +1,133 @@
+/**
+ * 디렉토리 관리 애플리케이션의 스타일 정의
+ * 
+ * 주요 스타일:
+ * 1. 디렉토리 트리 구조의 시각적 표현
+ * 2. 디렉토리 아이템의 레이아웃과 디자인
+ * 3. 드래그 앤 드롭 관련 시각적 피드백
+ * 4. 펼침/접힘 상태에 따른 애니메이션
+ *
+ * 색상 팔레트:
+ * - 기본 배경: #f8f9fa (연한 회색)
+ * - 테두리: #dee2e6 (중간 회색)
+ * - 강조: #0d6efd (파란색)
+ * - 드래그 오버: #e9ecef (매우 연한 회색)
+ */
+
+/* 디렉토리 트리의 기본 들여쓰기 설정 */
+.directory-wrapper {
+    margin-left: 20px;
+}
+
+/* 최상위 디렉토리는 들여쓰기 없음 */
+.directory-wrapper:first-child {
+    margin-left: 0;
+}
+
+/* 디렉토리 아이템의 기본 레이아웃 설정 */
+.directory-item {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    margin: 2px 0;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+/* 마우스 호버 시 디렉토리 아이템 강조 효과 */
+.directory-item:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+/* 펼침/접힘 토글 버튼 스타일 */
+.directory-toggle {
+    margin-right: 5px;
+    cursor: pointer;
+    visibility: hidden; /* 기본적으로 숨김 */
+}
+
+/* 하위 디렉토리가 있는 경우에만 토글 버튼 표시 */
+.has-children > .directory-toggle {
+    visibility: visible;
+}
+
+/* 디렉토리 이름 스타일 - 텍스트 선택 방지 및 공간 확장 */
+.directory-name {
+    margin-left: 5px;
+    flex-grow: 1;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* 디렉토리 작업 버튼 영역 (편집, 삭제 등) */
+.directory-actions {
+    visibility: hidden; /* 기본적으로 숨김 */
+    margin-left: auto;
+}
+
+/* 마우스 호버 시 작업 버튼 표시 */
+.directory-item:hover .directory-actions {
+    visibility: visible;
+}
+
+/* 하위 디렉토리 컨테이너 - 기본적으로 접힌 상태 */
+.directory-children {
+    display: none;
+    margin-left: 20px;
+}
+
+/* 펼쳐진 상태의 하위 디렉토리 표시 */
+.directory-children.expanded {
+    display: block;
+}
+
+/* 드래그 중인 디렉토리 아이템 스타일 */
+.directory-item.dragging {
+    opacity: 0.5; /* 반투명 효과로 드래그 중임을 표시 */
+}
+
+/* 드래그 오버 시 디렉토리 아이템 강조 효과 */
+.directory-item.drag-over {
+    border: 2px dashed #0d6efd;
+    background-color: #e9ecef;
+}
+
+/* 작업 버튼 기본 스타일 */
+.directory-item .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    margin-left: 5px;
+}
+
+/* 아이콘 버튼 스타일 - 원형 버튼 */
+.directory-item .btn-icon {
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+/* 아이콘 버튼 호버 효과 */
+.directory-item .btn-icon:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* 아이콘 크기 설정 */
+.directory-item .btn-icon i {
+    font-size: 14px;
+}
+
+/* 드래그 오버 시 상단 드롭 위치 표시 */
+.directory-item.drag-over-top {
+    border-top: 2px solid #0d6efd;
+}
+
+/* 드래그 오버 시 하단 드롭 위치 표시 */
+.directory-item.drag-over-bottom {
+    border-bottom: 2px solid #0d6efd;
+} 
