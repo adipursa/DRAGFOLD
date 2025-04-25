@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 디렉토리 관리 애플리케이션 (Directory Management Application)
 
 ## 프로젝트 개요
@@ -270,3 +271,6 @@ http://localhost:8080
 
 ## 라이선스
 이 프로젝트는 MIT 라이선스 하에 있습니다. 
+=======
+# DRAGFOLD
+>>>>>>> f12a16b7edd981f5767fb82c1513da3c6a4645ba
